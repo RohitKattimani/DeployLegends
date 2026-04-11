@@ -1,0 +1,764 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Dystopia - Policy Simulation Platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: simulations
+    description: Policy simulation management
+  - name: agents
+    description: AI citizen agents
+  - name: messages
+    description: Agent debate messages
+  - name: analytics
+    description: Real-time analytics and sentiment data
+  - name: consilium
+    description: Consilium dashboard data
+  - name: threads
+    description: Archetype thread discussions
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /simulations:
+    get:
+      operationId: listSimulations
+      tags: [simulations]
+      summary: List all simulations
+      responses:
+        "200":
+          description: List of simulations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Simulation"
+    post:
+      operationId: createSimulation
+      tags: [simulations]
+      summary: Create a new policy simulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSimulationBody"
+      responses:
+        "201":
+          description: Created simulation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Simulation"
+
+  /simulations/parse-pdf:
+    post:
+      operationId: parsePolicyPdf
+      tags: [simulations]
+      summary: Parse a PDF policy document and extract text
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        "200":
+          description: Extracted text from PDF
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedPdfResult"
+        "400":
+          description: Invalid file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /simulations/{id}:
+    get:
+      operationId: getSimulation
+      tags: [simulations]
+      summary: Get a simulation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Simulation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Simulation"
+    patch:
+      operationId: updateSimulation
+      tags: [simulations]
+      summary: Update simulation status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSimulationBody"
+      responses:
+        "200":
+          description: Updated simulation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Simulation"
+    delete:
+      operationId: deleteSimulation
+      tags: [simulations]
+      summary: Delete a simulation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /simulations/{id}/run:
+    post:
+      operationId: runSimulation
+      tags: [simulations]
+      summary: Trigger a simulation run - generates AI agent responses
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Simulation run result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationRunResult"
+
+  /simulations/{id}/agents:
+    get:
+      operationId: listSimulationAgents
+      tags: [agents]
+      summary: List agents in a simulation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+
+  /simulations/{id}/messages:
+    get:
+      operationId: listSimulationMessages
+      tags: [messages]
+      summary: List all messages in a simulation debate feed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages with vote data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DebateMessage"
+
+  /simulations/{id}/analytics:
+    get:
+      operationId: getSimulationAnalytics
+      tags: [analytics]
+      summary: Get real-time analytics for a simulation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Simulation analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationAnalytics"
+
+  /messages/{id}/vote:
+    post:
+      operationId: voteOnMessage
+      tags: [messages]
+      summary: Vote on a message (upvote +1, downvote -1, remove 0)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteBody"
+      responses:
+        "200":
+          description: Updated vote counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteResult"
+
+  /threads:
+    get:
+      operationId: listThreads
+      tags: [threads]
+      summary: List all archetype threads across simulations
+      responses:
+        "200":
+          description: Archetype threads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArchetypeThread"
+
+  /consilium/dashboard:
+    get:
+      operationId: getConsiliumDashboard
+      tags: [consilium]
+      summary: Get the Consilium command center overview
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsiliumDashboard"
+
+  /consilium/risk-alerts:
+    get:
+      operationId: getRiskAlerts
+      tags: [consilium]
+      summary: Get active risk alerts across all simulations
+      responses:
+        "200":
+          description: Risk alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskAlert"
+
+  /consilium/demographics:
+    get:
+      operationId: getDemographicBreakdown
+      tags: [consilium]
+      summary: Get sentiment breakdown by demographic
+      responses:
+        "200":
+          description: Demographic data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DemographicSentiment"
+
+  /agents:
+    get:
+      operationId: listAgents
+      tags: [agents]
+      summary: List all available agent archetypes
+      responses:
+        "200":
+          description: List of agent archetypes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    ParsedPdfResult:
+      type: object
+      properties:
+        text:
+          type: string
+        pageCount:
+          type: integer
+        wordCount:
+          type: integer
+      required:
+        - text
+        - pageCount
+        - wordCount
+
+    VoteBody:
+      type: object
+      properties:
+        value:
+          type: integer
+          description: "+1 for upvote, -1 for downvote, 0 to remove vote"
+          enum: [-1, 0, 1]
+      required:
+        - value
+
+    VoteResult:
+      type: object
+      properties:
+        messageId:
+          type: integer
+        upvotes:
+          type: integer
+        downvotes:
+          type: integer
+        netScore:
+          type: integer
+        userVote:
+          type: integer
+          nullable: true
+      required:
+        - messageId
+        - upvotes
+        - downvotes
+        - netScore
+
+    ArchetypeThread:
+      type: object
+      properties:
+        archetype:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        messageCount:
+          type: integer
+        avgSentiment:
+          type: number
+        recentMessages:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebateMessage"
+      required:
+        - archetype
+        - displayName
+        - description
+        - messageCount
+        - avgSentiment
+        - recentMessages
+
+    Simulation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        policyDescription:
+          type: string
+        city:
+          type: string
+        status:
+          type: string
+          enum: [draft, running, completed, paused]
+        agentCount:
+          type: integer
+        messageCount:
+          type: integer
+        overallSentiment:
+          type: number
+        protestRisk:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        userId:
+          type: string
+      required:
+        - id
+        - title
+        - policyDescription
+        - city
+        - status
+        - agentCount
+        - messageCount
+        - overallSentiment
+        - protestRisk
+        - createdAt
+        - updatedAt
+        - userId
+
+    CreateSimulationBody:
+      type: object
+      properties:
+        title:
+          type: string
+        policyDescription:
+          type: string
+        city:
+          type: string
+          default: Mumbai
+      required:
+        - title
+        - policyDescription
+
+    UpdateSimulationBody:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+          enum: [draft, running, completed, paused]
+
+    SimulationRunResult:
+      type: object
+      properties:
+        simulationId:
+          type: integer
+        messagesGenerated:
+          type: integer
+        agentsActivated:
+          type: integer
+        sentimentScore:
+          type: number
+        protestRisk:
+          type: number
+        topConcerns:
+          type: array
+          items:
+            type: string
+      required:
+        - simulationId
+        - messagesGenerated
+        - agentsActivated
+        - sentimentScore
+        - protestRisk
+        - topConcerns
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        archetype:
+          type: string
+          enum: [auto_driver, street_vendor, student, software_engineer, homemaker, small_business_owner, activist, retired_teacher, construction_worker, middle_class_professional]
+        age:
+          type: integer
+        neighborhood:
+          type: string
+        sentiment:
+          type: string
+          enum: [strongly_support, support, neutral, oppose, strongly_oppose]
+        sentimentScore:
+          type: number
+        bio:
+          type: string
+        concerns:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+      required:
+        - id
+        - name
+        - archetype
+        - age
+        - neighborhood
+        - sentiment
+        - sentimentScore
+        - bio
+        - concerns
+        - isActive
+
+    DebateMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        simulationId:
+          type: integer
+        agentId:
+          type: integer
+        agentName:
+          type: string
+        agentArchetype:
+          type: string
+        content:
+          type: string
+        sentiment:
+          type: string
+          enum: [strongly_support, support, neutral, oppose, strongly_oppose]
+        sentimentScore:
+          type: number
+        upvotes:
+          type: integer
+        downvotes:
+          type: integer
+        netScore:
+          type: integer
+        userVote:
+          type: integer
+          nullable: true
+          description: Current user's vote: 1, -1, or null
+        replyToId:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - simulationId
+        - agentId
+        - agentName
+        - agentArchetype
+        - content
+        - sentiment
+        - sentimentScore
+        - upvotes
+        - downvotes
+        - netScore
+        - createdAt
+
+    SimulationAnalytics:
+      type: object
+      properties:
+        simulationId:
+          type: integer
+        overallSentiment:
+          type: number
+        protestRisk:
+          type: number
+        sentimentOverTime:
+          type: array
+          items:
+            $ref: "#/components/schemas/SentimentDataPoint"
+        sentimentByDemographic:
+          type: array
+          items:
+            $ref: "#/components/schemas/DemographicSentiment"
+        topConcerns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConcernItem"
+        coalitionFormation:
+          type: array
+          items:
+            $ref: "#/components/schemas/Coalition"
+        messageVelocity:
+          type: integer
+      required:
+        - simulationId
+        - overallSentiment
+        - protestRisk
+        - sentimentOverTime
+        - sentimentByDemographic
+        - topConcerns
+        - coalitionFormation
+        - messageVelocity
+
+    SentimentDataPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        score:
+          type: number
+        messageCount:
+          type: integer
+      required:
+        - timestamp
+        - score
+        - messageCount
+
+    DemographicSentiment:
+      type: object
+      properties:
+        demographic:
+          type: string
+        archetype:
+          type: string
+        sentimentScore:
+          type: number
+        count:
+          type: integer
+        topConcern:
+          type: string
+      required:
+        - demographic
+        - archetype
+        - sentimentScore
+        - count
+        - topConcern
+
+    ConcernItem:
+      type: object
+      properties:
+        concern:
+          type: string
+        frequency:
+          type: integer
+        sentimentImpact:
+          type: number
+      required:
+        - concern
+        - frequency
+        - sentimentImpact
+
+    Coalition:
+      type: object
+      properties:
+        name:
+          type: string
+        archetypes:
+          type: array
+          items:
+            type: string
+        stance:
+          type: string
+          enum: [pro, anti, neutral]
+        strength:
+          type: number
+      required:
+        - name
+        - archetypes
+        - stance
+        - strength
+
+    ConsiliumDashboard:
+      type: object
+      properties:
+        totalSimulations:
+          type: integer
+        activeSimulations:
+          type: integer
+        totalAgents:
+          type: integer
+        totalMessages:
+          type: integer
+        avgSentiment:
+          type: number
+        highRiskSimulations:
+          type: integer
+        recentSimulations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Simulation"
+        sentimentTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/SentimentDataPoint"
+      required:
+        - totalSimulations
+        - activeSimulations
+        - totalAgents
+        - totalMessages
+        - avgSentiment
+        - highRiskSimulations
+        - recentSimulations
+        - sentimentTrend
+
+    RiskAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        simulationId:
+          type: integer
+        simulationTitle:
+          type: string
+        alertType:
+          type: string
+          enum: [high_protest_risk, coalition_forming, viral_opposition, sentiment_collapse, demographic_polarization]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - simulationId
+        - simulationTitle
+        - alertType
+        - severity
+        - description
+        - createdAt
